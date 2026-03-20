@@ -1,6 +1,6 @@
 # String Resolver
 
-A low-level C program exploring runtime string construction and obfuscation techniques without hardcoding sensitive values in plaintext. The encoded hex variable can be built in runtime to not be hardcoded. Will change in future push
+A low-level C program exploring runtime string construction and obfuscation techniques without hardcoding sensitive values in plaintext. The encoded hex variable can be built in runtime to not be hardcoded. Will change in future push.
 
 ## Overview
 
@@ -19,4 +19,5 @@ Instead of embedding strings (e.g. IP addresses) directly in source code where t
 
 ## Notes
 
-This is an experimental/learning project. Some legacy code is intentionally left in with comments explaining the reasoning behind it. First legacy code left behind is a hardcoded to build string "127.0.0.1" using the same bitmasking technique without the XOR obfuscation
+This is an experimental/learning project. Some legacy code is intentionally left in with comments explaining the reasoning behind it. First legacy code left behind is a hardcoded to build string "127.0.0.1" using the same bitmasking technique without the XOR obfuscation.
+I do realize the issue of different ASLR between different systems, possible writing of an arena or a personal malloc() func in the code to gain consistency.
