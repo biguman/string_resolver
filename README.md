@@ -2,8 +2,9 @@
 
 A low-level C program exploring runtime string construction and obfuscation techniques without hardcoding sensitive values in plaintext. The encoded hex variable can be built in runtime to not be hardcoded. Will change in future push.
 
-This is for linux usage, tested on both ubuntu WSL2 running ubuntu version 22 and full ubuntu machine running latest ubuntu version 24
-For usage, simply compile with "gcc -o test test.c" then execute with "./test". This should output in the end a string "real pc" in the case of pc specs being above 200gb of storage and 7gb of ram
+This is for linux usage, tested on both ubuntu WSL2 running ubuntu version 22 and full ubuntu machine running latest ubuntu version 24.
+
+For usage, simply compile with "gcc -o test test.c" then execute with "./test". This should output in the end a string "real pc" in the case of pc specs being above 200gb of storage and 7gb of ram.
 
 ## Overview
 
