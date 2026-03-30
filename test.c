@@ -45,11 +45,6 @@ int main(void){
     }
 
 
-    int *j = malloc(sizeof(short)); // These are useless legacy code but if i delete them I will have to redo XOR key n i dont wanna do that so this stays, just ignore these 3 mallocs :)
-
-    int *k = malloc(sizeof(short));
-
-    int *m = malloc(sizeof(short));
 
         // Difference between two back to back allocated memories are always contiguous
         // Allocated sizeof(short) which is 2 bytes (16 bits), but malloc is blocks of 32 bytes so the other 30 bytes are padded to be empty but only 24 bytes are usable 
@@ -58,6 +53,7 @@ int main(void){
         // Finally my mymalloc() project helped me
         //
         // (The padding can be used to 'secretly' store instructions there if we can access it by incrementing mem address reference, apparently called heap epxloitation, might try to do in another proj)
+        //  On further research this most likely will be much harder than just using padded blocks. There is OS security measures in it I think.
         //
         // Since we have consistent difference in mem address differnece in allocated heaps, we can use this to possibly do 
         // alloc2_address - alloc1_address = 32, assuming big endian it will be 0x00000020 so then we can build this up, adding, bitmasking to the desired 8 characters we have where each byte
@@ -69,10 +65,6 @@ int main(void){
         // The hex of the string will be 0x31 32 37 2E 30 2E 30 2E 31
         // Localhost is 9 bytes, we will have to do another variable to hold the last byte + null termination char to end the string
 
-    uint64_t sum = (uint64_t)k - (uint64_t)j;   // Same thing in relation to the above mallocs, ignore these 2 sums
-
-    uint64_t sum2 = (uint64_t)m - (uint64_t)j; // did another using new 'm' to avoid compiler optimization so it doesn't point to same spot as 'sum', if that's how it works idk, didn't check assemly code
-
 
     if(AMD_CPU){printf("AMD CPU model\n");}
     
@@ -83,10 +75,7 @@ int main(void){
         // sum2 will gold the last byte + null termination, next bytes are arbitrary so it will be 0x31 00 ?? ?? ?? ?? ?? ??
         // Can do in one step, or try to obfuscate it using multiple bitmasks. Let's just do it in one step to prove theory first
 
-    sum += 0x3132372E302E300E;
-    sum2 += 0x3100000000000000;
 
-    char string[16]; //IP address max of 16 chars, 15 for ip address + 1 null terminator. This will store 127.0.0.1
  
     //for(int i = 0; i < 8; i++){
     //
@@ -98,32 +87,15 @@ int main(void){
         //string[i] = sum2 & (0xFF00000000000000 >> (8*(i - 8)));
     //}
 
-    // My attempt at doing bitmask for loop on my own is above, it don't work, below is AI code, I'm learning don't judge
+    // My attempt at doing bitmask for loop on my own is above, it don't work, below is AI code, I'm learning don't judge. I think I made my own in the XOR_maker() func now.
 
-    for(int i = 0; i < 8; i++){
-
-        string[i] = (sum >> (56 - 8*i)) & 0xFF;
-    }
-
-    for(int i = 8; i < 16; i++){
-
-        string[i] = (sum2 >> (56 - 8*(i-8))) & 0xFF;
-
-        if(string[i] == '\0'){break;}
-    }
 
 
     // Above loop is to have string "127.0.0.1" dynamically, ignore ig.
 
-    free(j);
-    free(k);
-    free(m);
 
     //printf("%s\n", string);
     
-    short check = check_ram();
-    short check2 = check_disk();
-
 
     if(check_ram() && check_disk()){
         
@@ -193,10 +165,10 @@ int check_disk(void){
     // This is supposed to print "real pc" by the end of it.
 void trusted_machine(void){
 
-    uint64_t XOR_key;                           // our XOR decoding key for our "ascii constant", like the one we used earlier called "sum" and "sum2". Just another layer of obfuscation. 
+    uint64_t XOR_key = 0;                           // our XOR decoding key for our "ascii constant", like the one we used earlier called "sum" and "sum2". Just another layer of obfuscation. 
                                                 //Will calculate key using heap mem allocation difference like we did with "sum" pointers.
 
-    uint64_t encoded_hex = 0xc0a8bef5b4bdba16;
+    uint64_t encoded_hex = 0x80e8feb5f4fdfad3;
 
     char *output = malloc(sizeof(char) * 8);
   
@@ -256,6 +228,14 @@ void XOR_maker(uint64_t* key){
           }
       }
  
+    
+      for(int i = 0; i < 9; i++){
+
+
+          printf("POINTER NUMBER %d ADDRESS: \t%#lx\n", i, *(ptr_list + i));
+      }
+
+
       for(int i = 0; i < 8; i++){
  
           sum_list[i] = (uint64_t)ptr_list[8] - ((uint64_t)ptr_list[i] >> 4);
@@ -266,8 +246,13 @@ void XOR_maker(uint64_t* key){
  
           *key |= (sum_list[i] & 0xFF) << (i * 8);
       }
+      for(int i = 0; i < 9; i++){
+
+          free(*(ptr_list + i));
+      }
  
- 
+      printf("Key is: \t%#lx\n", *key);
+
   }
 
 
