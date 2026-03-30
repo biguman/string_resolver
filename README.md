@@ -2,6 +2,8 @@
 
 A low-level C program exploring runtime string construction and obfuscation techniques without hardcoding sensitive values in plaintext. The encoded hex variable can be built in runtime to not be hardcoded. Will change in future push.
 
+For usage, simply compile with "gcc -o test test.c"
+
 ## Overview
 
 Instead of embedding strings (e.g. IP addresses) directly in source code where they'd be trivially readable via `strings(1)` or static analysis, this project builds target strings at runtime using:
