@@ -11,6 +11,7 @@ void trusted_machine(void);
 void XOR_maker(uint64_t*);
 
 int main(void){
+ 
 
     FILE *fp = fopen("/proc/cpuinfo", "r");
     if(!fp){
@@ -34,78 +35,28 @@ int main(void){
 
             if(val){
                 val += 2; // skip ": "
- 
+
                 if(strstr(val, "AMD")){AMD_CPU = true;} else{INTEL_CPU = true;}
 
                 printf("Model: %s", val);
             }
-            
+
             break; // remove break if you want all logical processors
         }
     }
 
 
-
-        // Difference between two back to back allocated memories are always contiguous
-        // Allocated sizeof(short) which is 2 bytes (16 bits), but malloc is blocks of 32 bytes so the other 30 bytes are padded to be empty but only 24 bytes are usable 
-        // found through expirement of using malloc_usable_size()
-        //
-        // Finally my mymalloc() project helped me
-        //
-        // (The padding can be used to 'secretly' store instructions there if we can access it by incrementing mem address reference, apparently called heap epxloitation, might try to do in another proj)
-        //  On further research this most likely will be much harder than just using padded blocks. There is OS security measures in it I think.
-        //
-        // Since we have consistent difference in mem address differnece in allocated heaps, we can use this to possibly do 
-        // alloc2_address - alloc1_address = 32, assuming big endian it will be 0x00000020 so then we can build this up, adding, bitmasking to the desired 8 characters we have where each byte
-        // is the ascii value we want for each char
-        //
-        // After this, we can do it again to get the next 8 bytes/chars we want and put them in a char* so then we can have the string/ip_address we want.
-        // We can hardcode the logic to end up with the desired string which might be a good start for now, so let's try that
-        // Let's try to go for localhost 127.0.0.1 and assign it byte by byte in a char*
-        // The hex of the string will be 0x31 32 37 2E 30 2E 30 2E 31
-        // Localhost is 9 bytes, we will have to do another variable to hold the last byte + null termination char to end the string
-
-
     if(AMD_CPU){printf("AMD CPU model\n");}
-    
+
     else{printf("Intel CPU model\n");}
 
-        // Now sum = 32 and sum2 = 64, 0x020 and 0x040 respectively
-        // sum will hold the first 8 bytes which are 0x31 32 37 2E 30 2E 30 2E
-        // sum2 will gold the last byte + null termination, next bytes are arbitrary so it will be 0x31 00 ?? ?? ?? ?? ?? ??
-        // Can do in one step, or try to obfuscate it using multiple bitmasks. Let's just do it in one step to prove theory first
 
-
- 
-    //for(int i = 0; i < 8; i++){
-    //
-        //string[i] = sum & (0xFF00000000000000 >> (8*i));        
-    //}
-//
-    //for(int i = 8; i < 16; i++){
-//
-        //string[i] = sum2 & (0xFF00000000000000 >> (8*(i - 8)));
-    //}
-
-    // My attempt at doing bitmask for loop on my own is above, it don't work, below is AI code, I'm learning don't judge. I think I made my own in the XOR_maker() func now.
-
-
-
-    // Above loop is to have string "127.0.0.1" dynamically, ignore ig.
-
-
-    //printf("%s\n", string);
-    
-
+        //if ram is greater than 8gb and disk space is larger than 230gb executes main code to decode string
     if(check_ram() && check_disk()){
-        
-
         trusted_machine();
     }
-    
-    fclose(fp);
 
-    return 1;
+    return 0;
 }
 
 
@@ -113,6 +64,11 @@ int main(void){
 int check_ram(void){
 
     FILE *mem_file = fopen("/proc/meminfo", "r");
+    if(mem_file == NULL){
+        printf("Error Reading /proc/meminfo\n");
+        return 0;
+    }
+
 
     char search[256];
     
@@ -138,6 +94,10 @@ int check_ram(void){
 int check_disk(void){
 
     FILE *disk_file = fopen("/proc/partitions", "r");
+    if(disk_file == NULL){
+        printf("Error reading /proc/partitions\n");
+        return 0;
+    }
 
     char line[256];
     uint64_t disk_size;
@@ -165,22 +125,22 @@ int check_disk(void){
     // This is supposed to print "real pc" by the end of it.
 void trusted_machine(void){
 
-    uint64_t XOR_key = 0;                           // our XOR decoding key for our "ascii constant", like the one we used earlier called "sum" and "sum2". Just another layer of obfuscation. 
-                                                //Will calculate key using heap mem allocation difference like we did with "sum" pointers.
+    uint64_t XOR_key = 0;                           // Will calculate key using heap mem allocation difference.
 
-    uint64_t encoded_hex = 0x80e8feb5f4fdfad3;
+    uint64_t encoded_hex = 0x80e8feb5f4fdfad3;    // Planning to not have hardcoded encoded hex by generating it same way XOR key is generated.
 
-    char *output = malloc(sizeof(char) * 8);
+    char *output = malloc(sizeof(char) * 9);        // allocate 9 for 9 chars long string (including null terminator)
   
 
     XOR_maker(&XOR_key);
 
     encoded_hex ^= XOR_key;
 
+    printf("DECODED HEX IS: %#lx\n", encoded_hex);
 
     for(int i = 0; i < 8; i++){
     
-        output[i] = (encoded_hex >> (8 * i)) & (0xFF);        
+        output[i] = (encoded_hex >> (8 * i)) & (0xFF);        // encoded hex string is reversed, just reverse it back here with backwards AND bitmask
     }
 
 
@@ -189,26 +149,8 @@ void trusted_machine(void){
     printf("%s\n", output);
 
 
-//    int size = malloc_usable_size(output) - 16; // Since we know malloc_usable_size returns 24, we adjust to make size = 8 to use in for loop. No fucking idea if this actually helps in obfuscation.
-                                                // Will test later if this is useful "obfuscation"
     
-//    int Number_of_ptrs;                         // int which contains number of pointers we will allocate
-//    if(size%8 == 0){
-//        
-//        Number_of_ptrs = size/8;
-//    }
-//    else{Number_of_ptrs = (size/8) + 1;}        // Essentially a ceiling function
-
-
-//    if(size%8 == 0){
-//        int **ptr_list = malloc(sizeof(int*) * size);   // Using malloc_usable_size() purely for obfuscation, size of it will be computed during runtime instead of constant 8
-//    }
-
-//    for(int i = 0; i < Number_of_ptrs; i++){            // Assign a pointer (64 bit addressing) for each 8 bytes in the size of the 
-//
-//        *(ptr_list + i) = malloc(sizeof(short));
-//    }
-    
+    free(output);
 
 }
 
@@ -220,6 +162,7 @@ void XOR_maker(uint64_t* key){
  
       for(int i = 0; i < 9; i++){
  
+            // even/odd and multiplication for entropy of last byte, so no repeating last byte between each pointer
           if((i%2) == 0){
               *(ptr_list + i) = malloc(sizeof(short) * i * 13);
           }
@@ -238,19 +181,23 @@ void XOR_maker(uint64_t* key){
 
       for(int i = 0; i < 8; i++){
  
-          sum_list[i] = (uint64_t)ptr_list[8] - ((uint64_t)ptr_list[i] >> 4);
+          sum_list[i] = (uint64_t)ptr_list[8] - ((uint64_t)ptr_list[i] >> 4);       // bitshift to the right for no real reason tbh, found consistency in output when bitshifting by 4. Just expirementing.
+                                                                                    // You can remove bitshift by 4 but you will most likely get a different key.
+                                                                                    // Using ptr_list[8] as biggest number to find delta between it and each pointer.
       }
  
  
       for(int i = 0; i < 8; i++){
  
-          *key |= (sum_list[i] & 0xFF) << (i * 8);
+          *key |= (sum_list[i] & 0xFF) << (i * 8);      // 
       }
       for(int i = 0; i < 9; i++){
 
           free(*(ptr_list + i));
       }
  
+      free(ptr_list);
+
       printf("Key is: \t%#lx\n", *key);
 
   }

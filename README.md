@@ -1,27 +1,42 @@
 # String Resolver
+A low-level C project messing around with runtime string construction and 
+obfuscation — no plaintext strings sitting around for `strings(1)` to grab.
 
-A low-level C program exploring runtime string construction and obfuscation techniques without hardcoding sensitive values in plaintext. The encoded hex variable can be built in runtime to not be hardcoded. Will change in future push.
+## Files
+- **test.c** — Linux-only (64-bit). Has environment fingerprinting to bail 
+  on sandboxes/VMs before doing anything.
+- **wintest.c** — Trying to make it cross-platform. Linux works fine; 
+  Windows decode is still broken (WIP).
 
-This is for linux usage, tested on both ubuntu WSL2 running ubuntu version 22 and full ubuntu machine running latest ubuntu version 24.
+## How it works
+Strings get built at runtime instead of sitting in the binary:
 
-For usage, simply compile with "gcc -o test test.c" then execute with "./test". This should output in the end a string "real pc" in the case of pc specs being above 200gb of storage and 7gb of ram.
+- **Heap allocation arithmetic** — consecutive allocation deltas produce 
+  consistent constants, assembled byte-by-byte into the target string
+- **XOR encoding** — sensitive values stored as encoded hex, decoded at 
+  runtime using a key derived from the same heap deltas
+- **Environment fingerprinting** *(test.c only)* — enumerates CPU model via 
+  `/proc/cpuinfo` (AMD/Intel detection), checks RAM (`/proc/meminfo`) and 
+  disk size (`/proc/partitions`) before proceeding
 
-## Overview
+## Platform
+`test.c` is **64-bit Linux only** — the heap arithmetic depends on glibc's 
+allocator behavior. Tested on Ubuntu WSL2 (22.04) and Ubuntu 24.04 x86_64.
 
-Instead of embedding strings (e.g. IP addresses) directly in source code where they'd be trivially readable via `strings(1)` or static analysis, this project builds target strings at runtime using:
+`wintest.c` swaps allocators via `#ifdef _WIN32` (`HeapCreate`/`HeapAlloc` 
+on Windows, `malloc` on Linux). Windows heap layout is different enough that 
+the key derivation doesn't port cleanly yet.
 
-- **Heap allocation arithmetic** — exploiting the consistent 32-byte alignment between consecutive `malloc()` calls to derive known integer constants, which are then bitmask-assembled byte-by-byte into the target string
-- **XOR encoding** — sensitive values are stored as encoded hex constants and decoded at runtime using a dynamically generated XOR key (also derived from heap allocation deltas)
-- **Environment fingerprinting** — checks RAM (`/proc/meminfo`) and disk size (`/proc/partitions`) to detect sandbox or VM environments before proceeding
-
-## Concepts Demonstrated
-
-- Manual byte extraction via bitshifting and masking
-- Heap memory layout and `malloc` block alignment
-- Runtime key generation without hardcoded secrets
-- Linux `/proc` filesystem for system introspection
+## Usage
+```bash
+gcc -o test test.c && ./test
+gcc -o wintest wintest.c && ./wintest
+```
+For Windows: MinGW or MSVC targeting x86_64.
 
 ## Notes
+Experimental/learning project.
 
-This is an experimental/learning project. Some legacy code is intentionally left in with comments explaining the reasoning behind it. First legacy code left behind is a hardcoded to build string "127.0.0.1" using the same bitmasking technique without the XOR obfuscation.
-I do realize the issue of different ASLR between different systems, possible writing of an arena or a personal malloc() func in the code to gain consistency.
+ASLR behavior differs across architectures (32-bit vs 64-bit) causing 
+inconsistent heap deltas — considering a custom arena or personal `malloc()` 
+wrapper to normalize allocation gaps across targets.
