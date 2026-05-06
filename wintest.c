@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <malloc.h>
+
 #ifdef _WIN32
     #include <windows.h>
     static HANDLE hProcessHeap = NULL;
@@ -27,12 +28,20 @@
         free(ptr);
     }
 #endif
+
+
+
 void trusted_machine(void);
 void XOR_maker(uint64_t*);
+
+
 int main(void){
     trusted_machine();
     return 0;
 }
+
+
+
     // This is supposed to print "real pc" by the end of it.
 void trusted_machine(void){
     uint64_t XOR_key = 0;                           // our XOR decoding key for our "ascii constant", like the one we used earlier called "sum" and "sum2". Just another layer of obfuscation. 
@@ -92,6 +101,11 @@ void XOR_maker(uint64_t* key){
       }
 
       freeHeap(ptr_list);
+
+    #ifdef _WIN32
+        *key ^= 0x9c647caca4e4fcfc;
+    #endif
+
       printf("Key is: \t%#llx\n", *key);
   }
 // With each visit of this code, I realize how mentally deficient i really am, every revisit is convincing me to make my repos private until they are fully complete
